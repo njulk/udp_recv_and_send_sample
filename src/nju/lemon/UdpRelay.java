@@ -32,7 +32,6 @@ public class UdpRelay {
             //This never happens
             e.printStackTrace();
         }
-        init();
     }
 
     private void init() {
@@ -80,11 +79,6 @@ public class UdpRelay {
         return this;
     }
 
-    public void reStart() {
-        init();
-        start();
-    }
-
     public void send(String msg) {
         if (sendSocket == null) return;
         try {
@@ -98,10 +92,11 @@ public class UdpRelay {
     public void resetPacketReceiveListener(PacketReceivedListener listener) {
         stop();
         this.receivedListener = listener;
-        reStart();
+        start();
     }
 
     public void start() {
+        init();
         if (receiveSocket == null) return;
         receiveThread = new Thread(receiveWorker);
         receiveThread.start();
