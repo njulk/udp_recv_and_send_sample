@@ -32,7 +32,7 @@ public class UdpRelay {
             //This never happens
             e.printStackTrace();
         }
-
+        init();
     }
 
     private void init() {
@@ -86,17 +86,8 @@ public class UdpRelay {
         return this;
     }
 
-    public void reStart() {
-        init();
-        start();
-    }
-
-    //public void makePakcet(String msg)
-    //Mys
-
     public void send(String msg) {
         if (sendSocket == null) return;
-        //Send to routing(socket, msg)
         try {
             DatagramPacket packet = new DatagramPacket(msg.getBytes(), msg.length(), sendIp, sendPort);
             sendSocket.send(packet);
@@ -108,7 +99,7 @@ public class UdpRelay {
     public void resetPacketReceiveListener(PacketReceivedListener listener) {
         stop();
         this.receivedListener = listener;
-        reStart();
+        start();
     }
 
     public void start() {
