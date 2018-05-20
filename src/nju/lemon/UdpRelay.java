@@ -32,7 +32,7 @@ public class UdpRelay {
             //This never happens
             e.printStackTrace();
         }
-        init();
+
     }
 
     private void init() {
@@ -42,20 +42,26 @@ public class UdpRelay {
         } catch (SocketException e) {
             e.printStackTrace();
         }
-        receiveWorker = () -> {
-            while (isRunning) {
-                try {
-                    byte[] receiveBuffer = new byte[RECEIVE_BUFFER_LENGTH];
-                    DatagramPacket packet = new DatagramPacket(receiveBuffer, RECEIVE_BUFFER_LENGTH);
-                    receiveSocket.receive(packet);
-                    String receivedMessage = new String(packet.getData(), packet.getOffset(), packet.getLength());
-                    if (receivedListener == null) {
-                        System.out.println("Packet received: " + receivedMessage + ", but receive listener is null.");
-                    } else {
-                        receivedListener.onReceive(receivedMessage);
+        receiveWorker = new Runnable() {
+            @Override
+            public void run() {
+                while (isRunning) {
+                    try {
+                        byte[] receiveBuffer = new byte[RECEIVE_BUFFER_LENGTH];
+                        DatagramPacket packet = new DatagramPacket(receiveBuffer, RECEIVE_BUFFER_LENGTH);
+                        receiveSocket.receive(packet);
+                        String receivedMessage = new String(packet.getData(), packet.getOffset(), packet.getLength());
+                        //Send up to routing;
+                        //waiting for result;
+                        //upload
+                        if (receivedListener == null) {
+                            System.out.println("Packet received: " + receivedMessage + ", but receive listener is null.");
+                        } else {
+                            receivedListener.onReceive(receivedMessage);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         };
@@ -85,8 +91,12 @@ public class UdpRelay {
         start();
     }
 
+    //public void makePakcet(String msg)
+    //Mys
+
     public void send(String msg) {
         if (sendSocket == null) return;
+        //Send to routing(socket, msg)
         try {
             DatagramPacket packet = new DatagramPacket(msg.getBytes(), msg.length(), sendIp, sendPort);
             sendSocket.send(packet);
@@ -102,6 +112,7 @@ public class UdpRelay {
     }
 
     public void start() {
+        init();
         if (receiveSocket == null) return;
         receiveThread = new Thread(receiveWorker);
         receiveThread.start();
@@ -124,7 +135,7 @@ public class UdpRelay {
         }
     }
 
-    interface PacketReceivedListener {
+    public interface PacketReceivedListener {
         void onReceive(String msg);
     }
 

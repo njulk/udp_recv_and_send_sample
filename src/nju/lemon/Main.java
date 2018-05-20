@@ -3,6 +3,9 @@ package nju.lemon;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.Scanner;
 
 public class Main {
@@ -18,17 +21,29 @@ public class Main {
         }
         int sendPort = Integer.valueOf(args[0]);
         int receivePort = Integer.valueOf(args[1]);
+//        int sendPort = 5005;
+//        int receivePort = 5005;
         final File receiveFile = new File("receive_messages_" + sendPort + "to" + receivePort + ".txt");
-        FileOutputStream fos = new FileOutputStream(receiveFile);
-        UdpRelay.PacketReceivedListener listener = msg -> {
-            try {
-                fos.write((msg + "/n").getBytes());
-                System.out.println("Received: " + msg);
-            } catch (IOException e) {
-                e.printStackTrace();
+        final FileOutputStream fos = new FileOutputStream(receiveFile);
+        UdpRelay.PacketReceivedListener listener = new UdpRelay.PacketReceivedListener() {
+            @Override
+            public void onReceive(String msg) {
+                try {
+                    fos.write((msg + "/n").getBytes());
+                    System.out.println("Received: " + msg);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         };
+
+        Enumeration<NetworkInterface> interfaces =  NetworkInterface.getNetworkInterfaces();
+        NetworkInterface card = NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.11.2"));
+        //NetworkInterface sender = NetworkInterface.getByInetAddress(InetAddress.getByName("225.0.0.1"));
+        if(card != null) System.out.println(card.getDisplayName());
+
         UdpRelay relay = new UdpRelay(sendPort, receivePort, listener);
+        //relay.setSendIp("225.0.0.1").setReceiveIp("192.168.11.2");
         relay.start();
         Scanner in = new Scanner(System.in);
         String input = "";
