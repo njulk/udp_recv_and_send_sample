@@ -6,11 +6,17 @@ import nju.lemon.utils.ByteUtils;
 import java.io.Serializable;
 
 public class MyPacket implements Serializable {
+    public static final int PACKET_PRIORITY_NORMAL = 0;
+    public static final int PACKET_PRIORITY_LOW = 1;
+    public static final int PACKET_PRIORITY_HIGH = 2;
+    public static final int PACKET_TIME_SYNC = -1;
+
     private int srcId;
     private int destId;
     private long time;
     private MyLocation location;
     private String message;
+    private int prioriry;
 
     public MyPacket() {
         this(0, 0, 0, 0, 0);
@@ -66,6 +72,34 @@ public class MyPacket implements Serializable {
         }
     }
 
+    public MyPacket setPriority(int priority) {
+        this.prioriry = priority;
+        return this;
+    }
+
+    public int getPrioriry() {
+        return prioriry;
+    }
+
+    public int getDestId() {
+        return destId;
+    }
+
+    public int getSrcId() {
+        return srcId;
+    }
+
+    public int getLength() {
+        return 27 + this.message.length();
+    }
+
+    /**
+     * |+++++++|+++++++|++++++++|++++++++++|+++++++++++|++++++++++|++++++++++++++++|
+     * |     0 |     1 |2      9|10      17|18       25|   26     | 27             |
+     * | srcId | dstId |  time  | latitude | longitude | priority | mesaage        |
+     * |+++++++|+++++++|++++++++|++++++++++|+++++++++++|++++++++++|++++++++++++++++|
+     * @return
+     */
     public byte[] getBytes() {
         byte[] buffer = new byte[26 + message.length()];
         //src and dest
@@ -74,22 +108,28 @@ public class MyPacket implements Serializable {
         System.arraycopy(ByteUtils.longToBytes(time), 0, buffer, 2, 8);  //2-9
         System.arraycopy(ByteUtils.doubleToBytes(location.latitude), 0, buffer, 10, 8);  //10-17
         System.arraycopy(ByteUtils.doubleToBytes(location.longitude), 0, buffer, 18, 8); //18-25
-        System.arraycopy(message.getBytes(), 0, buffer, 26, message.length());
+        buffer[26] = (byte) (0xff & prioriry);
+        System.arraycopy(message.getBytes(), 0, buffer, 27, message.length());
         return buffer;
     }
 
     public static MyPacket fromBytes(byte[] bytes) {
-        int srcId = (bytes[0] + 256) % 256;
-        int destId = (bytes[1] + 256) % 256;
-        byte[] buf = new byte[8];
-        System.arraycopy(bytes, 2, buf, 0, 8);
-        long time = ByteUtils.bytesToLong(buf);
-        System.arraycopy(bytes, 10, buf, 0, 8);
-        double latitude = ByteUtils.bytesToDouble(buf);
-        System.arraycopy(bytes, 18, buf, 0, 8);
-        double longitude = ByteUtils.bytesToDouble(buf);
-        String message = new String(bytes, 26, bytes.length - 26);
-        return new MyPacket(srcId, destId, time, latitude, longitude, message);
+        try {
+            int srcId = (bytes[0] + 256) % 256;
+            int destId = (bytes[1] + 256) % 256;
+            byte[] buf = new byte[8];
+            System.arraycopy(bytes, 2, buf, 0, 8);
+            long time = ByteUtils.bytesToLong(buf);
+            System.arraycopy(bytes, 10, buf, 0, 8);
+            double latitude = ByteUtils.bytesToDouble(buf);
+            System.arraycopy(bytes, 18, buf, 0, 8);
+            double longitude = ByteUtils.bytesToDouble(buf);
+            int priority = (bytes[26] + 256) % 256;
+            String message = new String(bytes, 27, bytes.length - 27);
+            return new MyPacket(srcId, destId, time, latitude, longitude, message).setPriority(priority);
+        } catch (Exception e) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override

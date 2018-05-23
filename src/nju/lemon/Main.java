@@ -19,10 +19,10 @@ public class Main {
             System.out.println("Usage: Main [send port] [receive port]");
             return;
         }
-        int sendPort = Integer.valueOf(args[0]);
-        int receivePort = Integer.valueOf(args[1]);
-//        int sendPort = 5005;
-//        int receivePort = 5005;
+//        int sendPort = Integer.valueOf(args[0]);
+//        int receivePort = Integer.valueOf(args[1]);
+        int sendPort = 5005;
+        int receivePort = 25563;
         final File receiveFile = new File("receive_messages_" + sendPort + "to" + receivePort + ".txt");
         final FileOutputStream fos = new FileOutputStream(receiveFile);
         UdpRelay.PacketReceivedListener listener = new UdpRelay.PacketReceivedListener() {
@@ -37,13 +37,9 @@ public class Main {
             }
         };
 
-        Enumeration<NetworkInterface> interfaces =  NetworkInterface.getNetworkInterfaces();
-        NetworkInterface card = NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.11.2"));
-        //NetworkInterface sender = NetworkInterface.getByInetAddress(InetAddress.getByName("225.0.0.1"));
-        if(card != null) System.out.println(card.getDisplayName());
-
         UdpRelay relay = new UdpRelay(sendPort, receivePort, listener);
         //relay.setSendIp("225.0.0.1").setReceiveIp("192.168.11.2");
+        relay.setReceiveIp("114.212.117.15");
         relay.start();
         Scanner in = new Scanner(System.in);
         String input = "";

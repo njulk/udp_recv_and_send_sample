@@ -17,6 +17,11 @@ public class UdpRelay {
     private Runnable receiveWorker;
     private Thread receiveThread;
 
+    private int selfId;
+    private int maxId;
+
+    private MyTestRouter router;
+
     public UdpRelay(int sendPort, int receivePort) {
         this(sendPort, receivePort, null);
     }
@@ -32,7 +37,6 @@ public class UdpRelay {
             //This never happens
             e.printStackTrace();
         }
-        init();
     }
 
     private void init() {
@@ -54,10 +58,14 @@ public class UdpRelay {
                         //Send up to routing;
                         //waiting for result;
                         //upload
-                        if (receivedListener == null) {
-                            System.out.println("Packet received: " + receivedMessage + ", but receive listener is null.");
-                        } else {
-                            receivedListener.onReceive(receivedMessage);
+                        MyPacket receivedPacket = MyPacket.fromBytes(receivedMessage.getBytes());
+                        boolean upload = router.handleReceivedPacket(receivedPacket);
+                        if(upload) {
+                            if (receivedListener == null) {
+                                System.out.println("Packet received: " + receivedMessage + ", but receive listener is null.");
+                            } else {
+                                receivedListener.onReceive(receivedMessage);
+                            }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -66,6 +74,18 @@ public class UdpRelay {
             }
         };
         isRunning = true;
+
+        router = new MyTestRouter(sendSocket, sendIp, sendPort, selfId, maxId);
+    }
+
+    public UdpRelay setMaxId(int maxId) {
+        this.maxId = maxId;
+        return this;
+    }
+
+    public UdpRelay setSelfId(int selfId) {
+        this.selfId = selfId;
+        return this;
     }
 
     public UdpRelay setSendIp(String ip) {
@@ -96,6 +116,11 @@ public class UdpRelay {
         }
     }
 
+    public void send(MyPacket packet) {
+        if(sendSocket == null) return;
+        router.pendingPacket(packet);
+    }
+
     public void resetPacketReceiveListener(PacketReceivedListener listener) {
         stop();
         this.receivedListener = listener;
@@ -103,6 +128,9 @@ public class UdpRelay {
     }
 
     public void start() {
+        if(this.selfId == 0 || this.maxId == 0) {
+            System.out.println("Please set id first.");
+        }
         init();
         if (receiveSocket == null) return;
         receiveThread = new Thread(receiveWorker);
